@@ -2,13 +2,20 @@
 
 module KGAuthor {
 
+    // ============================================================
+    // [ADDED] Optional local aliases for KG-level definitions
+    // These improve readability but are optional — code works without them.
+    // ============================================================
     import UnivariateFunctionDefinition = KG.UnivariateFunctionDefinition;
     import ParametricFunctionDefinition = KG.ParametricFunctionDefinition;
+    import ODESystemDefinition = KG.ODESystemDefinition;   // [ADDED] Support for ODE systems
 
-
+    // ============================================================
+    // Core parsing utilities
+    // ============================================================
     export function extractTypeAndDef(def) {
         if (def.hasOwnProperty('type')) {
-            return def
+            return def;
         } else {
             def.type = Object.keys(def)[0];
             def.def = def[def.type];
@@ -21,17 +28,19 @@ module KGAuthor {
             if (KGAuthor.hasOwnProperty(obj.type)) {
                 parsedData = new KGAuthor[obj.type](obj.def).parse(parsedData);
             } else {
-                console.log("Sorry, there's no ", obj.type, " object type in KGAuthor. Maybe you have a typo?")
+                console.log("Sorry, there's no ", obj.type, " object type in KGAuthor. Maybe you have a typo?");
             }
         });
         return parsedData;
-
     }
 
+    // ============================================================
+    // Expression manipulation and helper utilities
+    // ============================================================
     export function getDefinitionProperty(def) {
         if (typeof def == 'string') {
             if (def.match(/[\*/+-]/)) {
-                return '(' + def + ')'
+                return '(' + def + ')';
             } else {
                 return def;
             }
@@ -43,15 +52,15 @@ module KGAuthor {
     export function getPropertyAsString(def) {
         var d = def;
         if (typeof d == 'number') {
-            return d.toString()
+            return d.toString();
         } else {
-            return "(" + d.toString() + ")"
+            return "(" + d.toString() + ")";
         }
     }
 
     export function getParameterName(str) {
         if (typeof str == 'string') {
-            return str.replace('params.', '')
+            return str.replace('params.', '');
         } else {
             return str;
         }
@@ -69,46 +78,31 @@ module KGAuthor {
     export function binaryFunction(def1, def2, fn) {
         if (typeof def1 == 'number' && typeof def2 == 'number') {
             switch (fn) {
-                case "+":
-                    return def1 + def2;
-                case "-":
-                    return def1 - def2;
-                case "/":
-                    return def1 / def2;
-                case "*":
-                    return def1 * def2;
-                case "^":
-                    return Math.pow(def1, def2);
+                case "+": return def1 + def2;
+                case "-": return def1 - def2;
+                case "/": return def1 / def2;
+                case "*": return def1 * def2;
+                case "^": return Math.pow(def1, def2);
             }
         } else {
-            return "(" + getDefinitionProperty(def1) + fn + getDefinitionProperty(def2) + ")"
+            return "(" + getDefinitionProperty(def1) + fn + getDefinitionProperty(def2) + ")";
         }
     }
 
     export function addDefs(def1, def2) {
-        if (def1 == 0) {
-            return def2;
-        }
-        if (def2 == 0) {
-            return def1;
-        }
+        if (def1 == 0) return def2;
+        if (def2 == 0) return def1;
         return binaryFunction(def1, def2, '+');
     }
 
     export function subtractDefs(def1, def2) {
-        if (def2 == 0) {
-            return def1;
-        }
+        if (def2 == 0) return def1;
         return binaryFunction(def1, def2, '-');
     }
 
     export function divideDefs(def1, def2) {
-        if (def1 == 0) {
-            return 0;
-        }
-        if (def2 == 1) {
-            return def1;
-        }
+        if (def1 == 0) return 0;
+        if (def2 == 1) return def1;
         return binaryFunction(def1, def2, '/');
     }
 
@@ -121,15 +115,9 @@ module KGAuthor {
     }
 
     export function multiplyDefs(def1, def2) {
-        if (def1 == 0 || def2 == 0) {
-            return 0;
-        }
-        if (def1 == 1) {
-            return def2;
-        }
-        if (def2 == 1) {
-            return def1;
-        }
+        if (def1 == 0 || def2 == 0) return 0;
+        if (def1 == 1) return def2;
+        if (def2 == 1) return def1;
         return binaryFunction(def1, def2, '*');
     }
 
@@ -152,7 +140,7 @@ module KGAuthor {
 
     export function quadraticRootDef(def1: string, def2: string, def3: string, positive: boolean) {
         const negagtiveB = negativeDef(def2);
-        const bSquaredMinus4ac = subtractDefs(squareDef(def2),multiplyDefs(4,multiplyDefs(def1,def3)));
+        const bSquaredMinus4ac = subtractDefs(squareDef(def2), multiplyDefs(4, multiplyDefs(def1, def3)));
         const numerator = positive ? addDefs(negagtiveB, sqrtDef(bSquaredMinus4ac)) : subtractDefs(negagtiveB, sqrtDef(bSquaredMinus4ac));
         const denominator = multiplyDefs(2, def1);
         return divideDefs(numerator, denominator);
@@ -162,48 +150,56 @@ module KGAuthor {
         if (typeof (def) == 'string') {
             return def.replace('params.', '');
         } else {
-            return def
+            return def;
         }
     }
 
+    // ============================================================
+    // [ADDED] Extended curve factory — now supports ODE systems
+    // ============================================================
+    export function curvesFromFunctions(
+        fns: (UnivariateFunctionDefinition | ParametricFunctionDefinition | ODESystemDefinition)[],
+        def,
+        graph
+    ) {
+        return fns.map(function (fn) {
+            let curveDef = copyJSON(def);
+
+            if (curveDef.hasOwnProperty('min')) fn.min = curveDef.min;
+            if (curveDef.hasOwnProperty('max')) fn.max = curveDef.max;
+            if (fn.hasOwnProperty('show')) curveDef.show = fn.show;
+
+            // Function type detection
+            if (fn.hasOwnProperty('parametric')) {
+                curveDef.parametricFunction = fn;
+            } else if (fn.hasOwnProperty('dxdt') && fn.hasOwnProperty('dydt')) {
+                curveDef.ODESystemFunction = fn;   // [ADDED] ODE case
+            } else {
+                curveDef.univariateFunction = fn;
+            }
+
+            return new Curve(curveDef, graph);
+        });
+    }
+
+    // ============================================================
+    // Visual and interaction utilities
+    // ============================================================
     export function makeDraggable(def: any) {
         if (def.hasOwnProperty('draggable') && !def.hasOwnProperty('drag')) {
-            if  ((def.draggable == true) || (def.draggable == 'true')){
+            if ((def.draggable == true) || (def.draggable == 'true')) {
                 def.drag = [];
                 if (def.x == `params.${paramName(def.x)}`) {
-                    def.drag.push({horizontal: paramName(def.x)})
+                    def.drag.push({ horizontal: paramName(def.x) });
                 }
                 if (def.y == `params.${paramName(def.y)}`) {
-                    def.drag.push({vertical: paramName(def.y)})
+                    def.drag.push({ vertical: paramName(def.y) });
                 }
             }
         }
         return def;
     }
 
-    export function curvesFromFunctions(fns: (UnivariateFunctionDefinition | ParametricFunctionDefinition)[], def, graph) {
-        return fns.map(function (fn) {
-            let curveDef = copyJSON(def);
-            if (curveDef.hasOwnProperty('min')) {
-                fn.min = curveDef.min;
-            }
-            if (curveDef.hasOwnProperty('max')) {
-                fn.max = curveDef.max;
-            }
-            if (fn.hasOwnProperty('show')) {
-                curveDef.show = fn.show;
-            }
-            if (fn.hasOwnProperty('parametric')) {
-                curveDef.parametricFunction = fn;
-            } else {
-                curveDef.univariateFunction = fn;
-            }
-            //console.log('creating curve from def', curveDef);
-            return new Curve(curveDef, graph);
-        })
-    }
-
-    // allow author to set fill color either by "color" attribute or "fill" attribute
     export function setFillColor(def) {
         if (def.open) {
             def.fill = 'white';
@@ -218,7 +214,6 @@ module KGAuthor {
         });
     }
 
-    // allow author to set stroke color either by "color" attribute or "stroke" attribute
     export function setStrokeColor(def) {
         return KG.setDefaults(def, {
             color: def.stroke,
@@ -226,7 +221,6 @@ module KGAuthor {
         });
     }
 
-    // create a fresh copy of a JSON object
     export function copyJSON(def) {
         return JSON.parse(JSON.stringify(def));
     }
@@ -235,7 +229,9 @@ module KGAuthor {
         return `(${target.split(search).join(replacement)})`;
     }
 
-    // allow author to specify a function using a single string rather than a function object
+    // ============================================================
+    // Function and fill parsing utilities
+    // ============================================================
     export function parseFn(def, authorName, codeName) {
         if (!def.hasOwnProperty(codeName) && def.hasOwnProperty(authorName)) {
             if (codeName == 'parametricFunction') {
@@ -245,7 +241,7 @@ module KGAuthor {
                     min: def.min,
                     max: def.max,
                     samplePoints: def.samplePoints
-                }
+                };
             } else {
                 def[codeName] = {
                     fn: def[authorName],
@@ -253,31 +249,27 @@ module KGAuthor {
                     min: def.min,
                     max: def.max,
                     samplePoints: def.samplePoints
-                }
+                };
             }
         }
     }
 
-    // allow author to set a fill color rather than a fill object
     export function parseFill(def, attr) {
         const v = def[attr];
         if (typeof v == 'string') {
-            def[attr] = {fill: v}
+            def[attr] = { fill: v };
         }
         if (typeof v == 'boolean' && v) {
-            const fillColor = def.hasOwnProperty('fill') ? def.fill : def.color
-            def[attr] = {fill: fillColor}
+            const fillColor = def.hasOwnProperty('fill') ? def.fill : def.color;
+            def[attr] = { fill: fillColor };
         }
     }
 
-    // inherit properties from a parent
     export function inheritFromParent(props: string[], parent, child) {
         props.forEach(function (prop) {
             if (parent.hasOwnProperty(prop) && !child.hasOwnProperty(prop)) {
                 child[prop] = parent[prop];
             }
-        })
-
+        });
     }
-
 }

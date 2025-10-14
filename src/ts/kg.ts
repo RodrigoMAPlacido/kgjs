@@ -16,6 +16,7 @@
 /// <reference path="math/univariateFunction.ts" />
 /// <reference path="math/parametricFunction.ts" />
 /// <reference path="math/multivariateFunction.ts" />
+/// <reference path="math/odeSystemFunction.ts" />
 
 /// <reference path="controller/listeners/listener.ts" />
 /// <reference path="controller/listeners/dragListener.ts" />
@@ -37,6 +38,7 @@
 /// <reference path="view/viewObjects/ggbObject.ts" />
 /// <reference path="view/viewObjects/contour.ts" />
 /// <reference path="view/viewObjects/label.ts" />
+/// <reference path="view/viewObjects/animationODE.ts" />
 
 /// <reference path="view/divObjects/divObject.ts" />
 /// <reference path="view/divObjects/positionedDiv.ts" />

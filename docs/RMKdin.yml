@@ -1,0 +1,163 @@
+---
+schema: EconSchema
+aspectRatio: 1.3
+
+params:
+- name: a
+  value: 0.33
+  min: 0.1
+  max: 0.7
+  round: 0.01
+- name: d
+  value: 0.05
+  min: 0.0
+  max: 0.2
+  round: 0.005
+- name: n
+  value: 0.02
+  min: 0.0
+  max: 0.08
+  round: 0.005
+- name: rho
+  value: 0.03
+  min: 0.0
+  max: 0.08
+  round: 0.005
+- name: theta
+  value: 2.0
+  min: 0.5
+  max: 5.0
+  round: 0.1
+- name: px
+  value: 25
+  min: 0
+  max: 100
+  round: 0.001
+- name: py
+  value: 2.3
+  min: 0
+  max: 100
+  round: 0.001
+- name: animation
+  value: true
+  type: boolean
+calcs:
+  # steady states
+  khat: "((params.a / (params.rho + params.d)) ^ (1 / (1 - params.a)))"
+  cstar: "((calcs.khat ^ params.a) - (params.n + params.d) * calcs.khat)"
+
+layout:
+  OneGraphPlusSidebar:
+    graph:
+      xAxis:
+        min: 0
+        max: 30
+        ticks: 6
+        title: "Capital (k)"
+      yAxis:
+        min: 0
+        max: 3
+        ticks: 6
+        title: "Consumption (c)"
+
+      objects:
+      - Curve:
+          fn: "(((x) ^ params.a) - (params.n + params.d) * (x))"
+          ind: x
+          samplePoints: 500
+          color: orange
+          strokeWidth: 3
+          label:
+            text: "\\dot{k}=0"
+            x: 25
+
+
+      - Segment:
+          a: [calcs.khat, 5]
+          b: [calcs.khat, 0]
+          color: blue
+          strokeWidth: 3
+          label:
+            text: "\\dot{c}=0"
+            position: t
+            fontSize: 14
+
+      - Point:
+          coordinates: [calcs.khat, calcs.cstar]
+          color: green
+          r: 6
+          droplines:
+            horizontal:
+
+      - Segment:
+          a: [calcs.khat, 0]
+          b: [calcs.khat, 0]
+          color: white
+          bgcolor: "'#36a854'"
+          label:
+            text: calcs.khat.toFixed(2)
+            position: t
+            fontSize: 12
+
+      - Segment:
+          a: [0, calcs.cstar]
+          b: [0, calcs.cstar]
+          color: white
+          bgcolor: "'#36a854'"
+          label:
+            text: calcs.cstar.toFixed(2)
+            position: r
+            fontSize: 12
+
+      - Point:
+          coordinates: [params.px, params.py]
+          color: red
+          r: 6
+          draggable: true
+
+
+      - Curve:
+          id: traj
+          ODESystemFunction:
+            dxdt: "(x ^ params.a) - y - (params.n + params.d) * x"
+            dydt: "y / params.theta * (params.a * (x ^ (params.a - 1)) - (params.rho + params.d))"
+            initial: [params.px, params.py]
+            steps: 1000
+            dt: 0.5
+            showDots: true
+            dotSpacing: 60
+            dotRadius: 5
+            dotColor: "rgba(0, 111, 0)"
+            animation: params.animation
+            speed: 2
+            movingDotColor: "rgba(255, 0, 0)"
+            movingDotRadius: 6
+            restartDelay: 2000
+          strokeWidth: 2
+          lineStyle: dashed
+          color: "rgba(70, 218, 70)"
+
+
+    sidebar:
+      controls:
+      - title: RMK Model
+        sliders:
+        - param: a
+          label: α
+          digits: 4
+        - param: d
+          label: δ
+          digits: 4
+        - param: n
+          label: n
+          digits: 4
+        - param: rho
+          label: ρ
+          digits: 4
+        - param: theta
+          label: θ
+          digits: 4
+        checkboxes:
+        - param: animation
+          label: "\\text{animation}"
+          type: boolean

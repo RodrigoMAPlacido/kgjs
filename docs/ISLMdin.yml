@@ -1,0 +1,131 @@
+schema: EconSchema
+aspectRatio: 1.3
+
+params:
+- name: B
+  value: 0.1
+  min: 0
+  max: 1
+  round: 0.01
+- name: a
+  value: 9
+  min: 5
+  max: 15
+  round: 0.1
+- name: c
+  value: 0.1
+  min: 0
+  max: 1
+  round: 0.01
+- name: d
+  value: 0.1
+  min: 0
+  max: 1
+  round: 0.01
+- name: px
+  value: 60
+  min: 0
+  max: 100
+  round: 1
+- name: py
+  value: 6
+  min: 0
+  max: 10
+  round: 0.1
+- name: animation
+  value: true
+
+calcs:
+  Yeq: "((params.a - params.c) / (params.B + params.d))"
+  req: "(params.c + params.d * calcs.Yeq)"
+
+layout:
+  OneGraphPlusSidebar:
+    graph:
+      xAxis:
+        min: 0
+        max: 100
+        ticks: 4
+        title: "Product (Y)"
+
+      yAxis:
+        min: 0
+        max: 10
+        ticks: 4
+        title: "Interest Rate (r)"
+
+      objects:
+      - Curve:
+          fn: "(params.a - (params.B) * (x))"
+          ind: x
+          color: blue
+          lineStyle: solid
+          strokeWidth: 4
+          label:
+            text: 'IS: r(Y)'
+            x: 70
+      - Curve:
+          fn: "(params.c + (params.d)* (x))"
+          ind: x
+          color: orange
+          strokeWidth: 4
+          label:
+            text: 'LM: r(Y)'
+            x: 80
+      - Point:
+          coordinates:
+          - calcs.Yeq
+          - calcs.req
+          color: green
+          r: 6
+          droplines:
+            vertical: 
+            horizontal: 
+      - Point:
+          coordinates:
+          - params.px
+          - params.py
+          color: red
+          r: 6
+          draggable: true
+
+      - Curve:
+          id: traj
+          ODESystemFunction:
+            dxdt: "5 * (params.a - params.B * x - y)"
+            dydt: "0.5 * (params.c + params.d * x - y)"
+            initial: [params.px, params.py]
+            steps: 1000
+            dt: 0.01
+            showDots: true
+            dotSpacing: 60
+            dotRadius: 4
+            dotColor: "rgba(0, 111, 0)"
+            animation: params.animation
+            speed: 15
+            movingDotColor: "rgba(255, 0, 0)"
+            movingDotRadius: 6
+            restartDelay: 3000
+          strokeWidth: 2
+          lineStyle: dashed
+          color: "rgba(70, 218, 70)"
+
+    sidebar:
+      controls:
+      - title: Dynamic IS-LM Model
+        sliders:
+        - param: a
+          label: a
+          digits: 3
+        - param: B
+          label: B
+          digits: 3
+        - param: c
+          label: c
+          digits: 3
+        - param: d
+          label: d
+          digits: 3
+        checkboxes:
+        - param: animation
+          label: "\\text{animation}"

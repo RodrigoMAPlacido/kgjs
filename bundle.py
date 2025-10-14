@@ -9,7 +9,7 @@ js_directories = [
     'docs/playground/code/',
     #'../bh-textbook/code/',
     #'../core-interactives/code/',
-    '../econgraphs/static/js/',
+    #'../econgraphs/static/js/',
     #'../econgraphs-beta/static/js/',
     #'../ditillio/ebook/static/js/',
     #'../graph-template/static/js/',
@@ -28,7 +28,7 @@ css_directories = [
     'docs/playground/code/',
     #'../bh-textbook/code/',
     #'../core-interactives/code/',
-    '../econgraphs/static/css/',
+    #'../econgraphs/static/css/',
     #'../econgraphs-beta/static/css/',
     #'../ditillio/ebook/static/css/',
     #'../graph-template/static/css/',
@@ -75,7 +75,7 @@ bundles = [
         ]
     },
     {
-        "name": "kg.0.4.0.js",
+        "name": "kg.0.4.0_ODE.js",
         "dest_directories": js_directories,
         "order": [
             "build/lib/kg-lib.js",
@@ -83,7 +83,7 @@ bundles = [
         ]
     },
     {
-        "name": "kg3d.0.4.0.js",
+        "name": "kg3d.0.4.0_ODE.js",
         "dest_directories": js_directories,
         "order": [
             "build/lib/kg3d-lib.js",

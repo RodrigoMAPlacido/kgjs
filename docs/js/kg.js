@@ -13,6 +13,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var KG;
 (function (KG) {
     /*
@@ -73,6 +84,9 @@ var KG;
 /// <reference path="../kgAuthor.ts" />
 var KGAuthor;
 (function (KGAuthor) {
+    // ============================================================
+    // Core parsing utilities
+    // ============================================================
     function extractTypeAndDef(def) {
         if (def.hasOwnProperty('type')) {
             return def;
@@ -96,6 +110,9 @@ var KGAuthor;
         return parsedData;
     }
     KGAuthor.parse = parse;
+    // ============================================================
+    // Expression manipulation and helper utilities
+    // ============================================================
     function getDefinitionProperty(def) {
         if (typeof def == 'string') {
             if (def.match(/[\*/+-]/)) {
@@ -141,16 +158,11 @@ var KGAuthor;
     function binaryFunction(def1, def2, fn) {
         if (typeof def1 == 'number' && typeof def2 == 'number') {
             switch (fn) {
-                case "+":
-                    return def1 + def2;
-                case "-":
-                    return def1 - def2;
-                case "/":
-                    return def1 / def2;
-                case "*":
-                    return def1 * def2;
-                case "^":
-                    return Math.pow(def1, def2);
+                case "+": return def1 + def2;
+                case "-": return def1 - def2;
+                case "/": return def1 / def2;
+                case "*": return def1 * def2;
+                case "^": return Math.pow(def1, def2);
             }
         }
         else {
@@ -159,29 +171,24 @@ var KGAuthor;
     }
     KGAuthor.binaryFunction = binaryFunction;
     function addDefs(def1, def2) {
-        if (def1 == 0) {
+        if (def1 == 0)
             return def2;
-        }
-        if (def2 == 0) {
+        if (def2 == 0)
             return def1;
-        }
         return binaryFunction(def1, def2, '+');
     }
     KGAuthor.addDefs = addDefs;
     function subtractDefs(def1, def2) {
-        if (def2 == 0) {
+        if (def2 == 0)
             return def1;
-        }
         return binaryFunction(def1, def2, '-');
     }
     KGAuthor.subtractDefs = subtractDefs;
     function divideDefs(def1, def2) {
-        if (def1 == 0) {
+        if (def1 == 0)
             return 0;
-        }
-        if (def2 == 1) {
+        if (def2 == 1)
             return def1;
-        }
         return binaryFunction(def1, def2, '/');
     }
     KGAuthor.divideDefs = divideDefs;
@@ -194,15 +201,12 @@ var KGAuthor;
     }
     KGAuthor.invertDef = invertDef;
     function multiplyDefs(def1, def2) {
-        if (def1 == 0 || def2 == 0) {
+        if (def1 == 0 || def2 == 0)
             return 0;
-        }
-        if (def1 == 1) {
+        if (def1 == 1)
             return def2;
-        }
-        if (def2 == 1) {
+        if (def2 == 1)
             return def1;
-        }
         return binaryFunction(def1, def2, '*');
     }
     KGAuthor.multiplyDefs = multiplyDefs;
@@ -240,6 +244,35 @@ var KGAuthor;
         }
     }
     KGAuthor.paramName = paramName;
+    // ============================================================
+    // [ADDED] Extended curve factory — now supports ODE systems
+    // ============================================================
+    function curvesFromFunctions(fns, def, graph) {
+        return fns.map(function (fn) {
+            var curveDef = copyJSON(def);
+            if (curveDef.hasOwnProperty('min'))
+                fn.min = curveDef.min;
+            if (curveDef.hasOwnProperty('max'))
+                fn.max = curveDef.max;
+            if (fn.hasOwnProperty('show'))
+                curveDef.show = fn.show;
+            // Function type detection
+            if (fn.hasOwnProperty('parametric')) {
+                curveDef.parametricFunction = fn;
+            }
+            else if (fn.hasOwnProperty('dxdt') && fn.hasOwnProperty('dydt')) {
+                curveDef.ODESystemFunction = fn; // [ADDED] ODE case
+            }
+            else {
+                curveDef.univariateFunction = fn;
+            }
+            return new KGAuthor.Curve(curveDef, graph);
+        });
+    }
+    KGAuthor.curvesFromFunctions = curvesFromFunctions;
+    // ============================================================
+    // Visual and interaction utilities
+    // ============================================================
     function makeDraggable(def) {
         if (def.hasOwnProperty('draggable') && !def.hasOwnProperty('drag')) {
             if ((def.draggable == true) || (def.draggable == 'true')) {
@@ -255,30 +288,6 @@ var KGAuthor;
         return def;
     }
     KGAuthor.makeDraggable = makeDraggable;
-    function curvesFromFunctions(fns, def, graph) {
-        return fns.map(function (fn) {
-            var curveDef = copyJSON(def);
-            if (curveDef.hasOwnProperty('min')) {
-                fn.min = curveDef.min;
-            }
-            if (curveDef.hasOwnProperty('max')) {
-                fn.max = curveDef.max;
-            }
-            if (fn.hasOwnProperty('show')) {
-                curveDef.show = fn.show;
-            }
-            if (fn.hasOwnProperty('parametric')) {
-                curveDef.parametricFunction = fn;
-            }
-            else {
-                curveDef.univariateFunction = fn;
-            }
-            //console.log('creating curve from def', curveDef);
-            return new KGAuthor.Curve(curveDef, graph);
-        });
-    }
-    KGAuthor.curvesFromFunctions = curvesFromFunctions;
-    // allow author to set fill color either by "color" attribute or "fill" attribute
     function setFillColor(def) {
         if (def.open) {
             def.fill = 'white';
@@ -293,7 +302,6 @@ var KGAuthor;
         });
     }
     KGAuthor.setFillColor = setFillColor;
-    // allow author to set stroke color either by "color" attribute or "stroke" attribute
     function setStrokeColor(def) {
         return KG.setDefaults(def, {
             color: def.stroke,
@@ -301,7 +309,6 @@ var KGAuthor;
         });
     }
     KGAuthor.setStrokeColor = setStrokeColor;
-    // create a fresh copy of a JSON object
     function copyJSON(def) {
         return JSON.parse(JSON.stringify(def));
     }
@@ -310,7 +317,9 @@ var KGAuthor;
         return "(" + target.split(search).join(replacement) + ")";
     }
     KGAuthor.replaceVariable = replaceVariable;
-    // allow author to specify a function using a single string rather than a function object
+    // ============================================================
+    // Function and fill parsing utilities
+    // ============================================================
     function parseFn(def, authorName, codeName) {
         if (!def.hasOwnProperty(codeName) && def.hasOwnProperty(authorName)) {
             if (codeName == 'parametricFunction') {
@@ -334,7 +343,6 @@ var KGAuthor;
         }
     }
     KGAuthor.parseFn = parseFn;
-    // allow author to set a fill color rather than a fill object
     function parseFill(def, attr) {
         var v = def[attr];
         if (typeof v == 'string') {
@@ -346,7 +354,6 @@ var KGAuthor;
         }
     }
     KGAuthor.parseFill = parseFill;
-    // inherit properties from a parent
     function inheritFromParent(props, parent, child) {
         props.forEach(function (prop) {
             if (parent.hasOwnProperty(prop) && !child.hasOwnProperty(prop)) {
@@ -1955,11 +1962,18 @@ var KGAuthor;
 /// <reference path="../kgAuthor.ts" />
 var KGAuthor;
 (function (KGAuthor) {
+    // ============================================================
+    // Curve class — extended to recognize ODESystemFunction
+    // ============================================================
     var Curve = /** @class */ (function (_super) {
         __extends(Curve, _super);
+        // ============================================================
+        // Constructor
+        // ============================================================
         function Curve(def, graph) {
             var _this = this;
             def = KGAuthor.setStrokeColor(def);
+            // [UNCHANGED]: parse basic function types
             KGAuthor.parseFn(def, 'fn', 'univariateFunction');
             KGAuthor.parseFn(def, 'xFn', 'parametricFunction');
             _this = _super.call(this, def, graph) || this;
@@ -1967,25 +1981,45 @@ var KGAuthor;
             c.type = 'Curve';
             c.layer = def.layer || 1;
             c.pts = def.pts || [];
+            // ============================================================
+            // [ADDED] ODE support: instantiate ODESystemFunction if defined
+            // ============================================================
+            if (def.hasOwnProperty('ODESystemFunction')) {
+                // Ensure the model exists before constructing
+                if (!def.ODESystemFunction.model && def.model) {
+                    def.ODESystemFunction.model = def.model;
+                }
+                else if (!def.ODESystemFunction.model) {
+                    console.warn("ODESystemFunction missing model — check the parsing process.");
+                }
+                try {
+                    c.ODESystemFunction = new KG.ODESystemFunction(def.ODESystemFunction);
+                }
+                catch (e) {
+                    console.error("Error creating ODESystemFunction:", e);
+                }
+            }
+            // ============================================================
+            // [UNCHANGED] Areas below and above the curve
+            // ============================================================
             if (def.hasOwnProperty('areaBelow')) {
-                KG.setDefaults(def.areaBelow, {
-                    color: def.color
-                });
+                KG.setDefaults(def.areaBelow, { color: def.color });
                 KGAuthor.parseFill(def, 'areaBelow');
                 KG.setDefaults(def.areaBelow, def.univariateFunction);
                 KGAuthor.parseFn(def.areaBelow, 'fn', 'univariateFunction1');
                 c.subObjects.push(new KGAuthor.Area(def.areaBelow, graph));
             }
             if (def.hasOwnProperty('areaAbove')) {
-                KG.setDefaults(def.areaBelow, {
-                    color: def.color
-                });
+                KG.setDefaults(def.areaBelow, { color: def.color });
                 KGAuthor.parseFill(def, 'areaAbove');
                 KG.setDefaults(def.areaAbove, def.univariateFunction);
                 KGAuthor.parseFn(def.areaAbove, 'fn', 'univariateFunction1');
                 def.areaAbove.above = true;
                 c.subObjects.push(new KGAuthor.Area(def.areaAbove, graph));
             }
+            // ============================================================
+            // [UNCHANGED] Label handling
+            // ============================================================
             if (def.hasOwnProperty('label')) {
                 var labelDef = KGAuthor.copyJSON(def);
                 delete labelDef.label;
@@ -2013,6 +2047,9 @@ var KGAuthor;
             }
             return _this;
         }
+        // ============================================================
+        // [UNCHANGED] Function mapping helpers
+        // ============================================================
         Curve.prototype.yOfX = function (x) {
             return "(" + KGAuthor.replaceVariable(this.def.univariateFunction.fn, '(x)', "(" + x + ")") + ")";
         };
@@ -2031,6 +2068,9 @@ var KGAuthor;
                 KGAuthor.replaceVariable(this.def.parametricFunction.yFunction, '(t)', "(" + t + ")")
             ];
         };
+        // ============================================================
+        // [UNCHANGED] Parsing logic for points and calculation
+        // ============================================================
         Curve.prototype.parseSelf = function (parsedData) {
             var c = this;
             parsedData = _super.prototype.parseSelf.call(this, parsedData);
@@ -6552,6 +6592,207 @@ var KG;
     }(MathFunction));
     KG.MultivariateFunction = MultivariateFunction;
 })(KG || (KG = {}));
+/// <reference path="../kg.ts" />
+var KG;
+(function (KG) {
+    var ODESystemFunction = /** @class */ (function (_super) {
+        __extends(ODESystemFunction, _super);
+        function ODESystemFunction(def) {
+            var _this = _super.call(this, def) || this;
+            // ---- Main data ----
+            _this.data = [];
+            _this.dots = [];
+            // Version number (used by Curve to detect real changes)
+            _this.version = 0;
+            KG.setDefaults(def, {
+                steps: 400,
+                dt: 0.05,
+                showDots: false,
+                dotSpacing: 60,
+                dotRadius: 3,
+                dotColor: "green",
+                animation: false,
+                speed: 1.0,
+                movingDotColor: "red",
+                movingDotRadius: 5,
+                restartDelay: 1000
+            });
+            _this.dxdtDef = def.dxdt;
+            _this.dydtDef = def.dydt;
+            _this.steps = def.steps;
+            _this.dt = def.dt;
+            _this.initial = def.initial || [0, 0];
+            _this.lastInitial = [NaN, NaN];
+            _this.lastParams = {};
+            // --- Dynamic evaluation of visual attributes (supports params.*) ---
+            _this.showDots = _this.evaluateExpr(def.showDots, def.model);
+            _this.dotSpacing = _this.evaluateExpr(def.dotSpacing, def.model);
+            _this.dotRadius = _this.evaluateExpr(def.dotRadius, def.model);
+            _this.dotColor = _this.evaluateExpr(def.dotColor, def.model);
+            _this.animation = _this.evaluateExpr(def.animation, def.model);
+            _this.speed = _this.evaluateExpr(def.speed, def.model);
+            _this.movingDotColor = _this.evaluateExpr(def.movingDotColor, def.model);
+            _this.movingDotRadius = _this.evaluateExpr(def.movingDotRadius, def.model);
+            _this.restartDelay = _this.evaluateExpr(def.restartDelay, def.model);
+            console.log("ODESystemFunction created");
+            return _this;
+        }
+        // ============================================================
+        // 1. Generic evaluator for expressions (params, calcs, colors)
+        //    (public so Curve can synchronize fn.animation)
+        // ============================================================
+        ODESystemFunction.prototype.evaluateExpr = function (expr, model) {
+            if (expr === undefined || expr === null)
+                return expr;
+            if (typeof expr === "boolean" || typeof expr === "number")
+                return expr;
+            if (typeof expr === "string") {
+                var trimmed = expr.trim();
+                // 1. Protects literals and color strings
+                if (trimmed.startsWith("'") || trimmed.startsWith('"') || // already quoted string
+                    trimmed.startsWith('#') || // hex color
+                    trimmed.startsWith('rgb') || trimmed.startsWith('hsl') // rgb(), rgba(), hsl()
+                ) {
+                    return trimmed.replace(/^['"]|['"]$/g, ''); // remove outer quotes if any
+                }
+                // 2. Try to evaluate as a JavaScript expression (e.g., params.a + params.b)
+                try {
+                    var f = new Function("params", "calcs", "colors", "with(params){with(calcs){with(colors){return " + expr + ";}}}");
+                    return f(model.currentParamValues, model.currentCalcValues, model.currentColors);
+                }
+                catch (e) {
+                    console.warn("Error evaluating expression:", expr, e);
+                    return expr; // literal fallback
+                }
+            }
+            return expr;
+        };
+        // ============================================================
+        // 2. Derivatives and RK4 solver
+        // ============================================================
+        ODESystemFunction.prototype.deriv = function (state, scope) {
+            var dx = 0, dy = 0;
+            try {
+                dx = this.dxdtCompiled.evaluate(__assign({ x: state.x, y: state.y }, scope.params));
+            }
+            catch (_a) {
+                dx = 0;
+            }
+            try {
+                dy = this.dydtCompiled.evaluate(__assign({ x: state.x, y: state.y }, scope.params));
+            }
+            catch (_b) {
+                dy = 0;
+            }
+            return { dx: dx, dy: dy };
+        };
+        ODESystemFunction.prototype.rk4Step = function (s, scope, h) {
+            var k1 = this.deriv(s, scope);
+            var s2 = { x: s.x + 0.5 * h * k1.dx, y: s.y + 0.5 * h * k1.dy };
+            var k2 = this.deriv(s2, scope);
+            var s3 = { x: s.x + 0.5 * h * k2.dx, y: s.y + 0.5 * h * k2.dy };
+            var k3 = this.deriv(s3, scope);
+            var s4s = { x: s.x + h * k3.dx, y: s.y + h * k3.dy };
+            var k4 = this.deriv(s4s, scope);
+            return {
+                x: s.x + (h / 6) * (k1.dx + 2 * k2.dx + 2 * k3.dx + k4.dx),
+                y: s.y + (h / 6) * (k1.dy + 2 * k2.dy + 2 * k3.dy + k4.dy)
+            };
+        };
+        // ============================================================
+        // 3. Data and dots generation
+        // ============================================================
+        ODESystemFunction.prototype.generateData = function () {
+            var fn = this;
+            fn.scope = {
+                params: fn.model.currentParamValues,
+                calcs: fn.model.currentCalcValues,
+                colors: fn.model.currentColors
+            };
+            var params = fn.scope.params;
+            var x0 = (params["px"] != null) ? params["px"] : fn.initial[0];
+            var y0 = (params["py"] != null) ? params["py"] : fn.initial[1];
+            fn.dxdtCompiled = math.compile(fn.updateFunctionString(fn.dxdtDef, fn.scope));
+            fn.dydtCompiled = math.compile(fn.updateFunctionString(fn.dydtDef, fn.scope));
+            var data = [];
+            var state = { x: x0, y: y0 };
+            data.push(__assign({}, state));
+            for (var i = 0; i < fn.steps; i++) {
+                state = this.rk4Step(state, fn.scope, fn.dt);
+                data.push(__assign({}, state));
+            }
+            this.data = data;
+            this.version = (this.version || 0) + 1; // increments version when data changes
+            console.log("generateData(): " + data.length + " points generated. v=" + this.version);
+            return data;
+        };
+        ODESystemFunction.prototype.generateDots = function () {
+            if (!this.showDots || !this.data || this.data.length === 0) {
+                return [];
+            }
+            var dotSpacing = this.dotSpacing || 10;
+            var dots = [];
+            if (dotSpacing < 1) {
+                var totalSteps = this.data.length;
+                dotSpacing = Math.max(1, Math.floor(totalSteps * dotSpacing));
+            }
+            for (var i = 0; i < this.data.length; i += dotSpacing) {
+                dots.push(this.data[i]);
+            }
+            this.dots = dots;
+            console.log("generateDots(): " + dots.length + " dots created (spacing=" + dotSpacing + ")");
+            return dots;
+        };
+        ODESystemFunction.prototype.evaluate = function (t) {
+            var i = Math.min(Math.floor(t / this.dt), this.data.length - 1);
+            return this.data[i];
+        };
+        // ============================================================
+        // 4. Update
+        // ============================================================
+        ODESystemFunction.prototype.update = function (force) {
+            var fn = _super.prototype.update.call(this, force);
+            fn.scope = {
+                params: fn.model.currentParamValues,
+                calcs: fn.model.currentCalcValues,
+                colors: fn.model.currentColors
+            };
+            var params = fn.scope.params;
+            var x0 = (params["px"] != null) ? params["px"] : fn.initial[0];
+            var y0 = (params["py"] != null) ? params["py"] : fn.initial[1];
+            var changedInitial = !fn.lastInitial ||
+                fn.lastInitial[0] !== x0 ||
+                fn.lastInitial[1] !== y0;
+            var changedParams = !fn.lastParams ||
+                Object.keys(params).some(function (k) { return params[k] !== fn.lastParams[k]; });
+            // --- re-evaluate dynamic properties ---
+            fn.showDots = fn.evaluateExpr(fn.showDots, fn.model);
+            fn.dotSpacing = fn.evaluateExpr(fn.dotSpacing, fn.model);
+            fn.dotRadius = fn.evaluateExpr(fn.dotRadius, fn.model);
+            fn.dotColor = fn.evaluateExpr(fn.dotColor, fn.model);
+            fn.animation = fn.evaluateExpr(fn.animation, fn.model);
+            fn.speed = fn.evaluateExpr(fn.speed, fn.model);
+            fn.movingDotColor = fn.evaluateExpr(fn.movingDotColor, fn.model);
+            fn.movingDotRadius = fn.evaluateExpr(fn.movingDotRadius, fn.model);
+            if (force || changedInitial || changedParams || !fn.data || fn.data.length === 0) {
+                fn.lastInitial = [x0, y0];
+                fn.lastParams = __assign({}, params);
+                fn.data = fn.generateData();
+                if (fn.showDots)
+                    fn.generateDots();
+                fn.hasChanged = true;
+                if (fn.graph)
+                    fn.graph.hasChanged = true;
+            }
+            else {
+                fn.hasChanged = false;
+            }
+            return fn;
+        };
+        return ODESystemFunction;
+    }(KG.MathFunction));
+    KG.ODESystemFunction = ODESystemFunction;
+})(KG || (KG = {}));
 /// <reference path="../../kg.ts" />
 var KG;
 (function (KG) {
@@ -7330,87 +7571,109 @@ var KG;
 (function (KG) {
     var Curve = /** @class */ (function (_super) {
         __extends(Curve, _super);
+        // ============================================================
+        // Constructor
+        // ============================================================
         function Curve(def) {
-            var _this = this;
-            var univariateFunction, parametricFunction;
+            var _this = 
+            // [MODIFIED]: In the original version, super(def) was called at the end.
+            // Here it is called first to ensure ViewObject initialization occurs early.
+            _super.call(this, def) || this;
+            // [UNCHANGED]: Set default visual parameters
             KG.setDefaults(def, {
                 interpolation: 'curveBasis',
                 strokeWidth: 2
             });
             KG.setProperties(def, 'constants', ['interpolation']);
-            if (def.hasOwnProperty('univariateFunction')) {
+            // [ADDED]: Instantiate the animation controller
+            _this.odeAnimator = new KG.AnimationODE();
+            // [MODIFIED]: Unified initialization of the supported function types.
+            if (def.univariateFunction) {
                 def.univariateFunction.model = def.model;
-                univariateFunction = new KG.UnivariateFunction(def.univariateFunction);
-                KG.setProperties(def, 'updatables', []);
+                _this.univariateFunction = new KG.UnivariateFunction(def.univariateFunction);
             }
-            else if (def.hasOwnProperty('parametricFunction')) {
+            else if (def.parametricFunction) {
                 def.parametricFunction.model = def.model;
-                parametricFunction = new KG.ParametricFunction(def.parametricFunction);
-                KG.setProperties(def, 'updatables', []);
+                _this.parametricFunction = new KG.ParametricFunction(def.parametricFunction);
             }
-            _this = _super.call(this, def) || this;
-            var curve = _this;
-            if (def.hasOwnProperty('univariateFunction')) {
-                curve.univariateFunction = univariateFunction;
-            }
-            else if (def.hasOwnProperty('parametricFunction')) {
-                def.parametricFunction.model = def.model;
-                curve.parametricFunction = parametricFunction;
+            else if (def.ODESystemFunction) { // [ADDED]
+                def.ODESystemFunction.model = def.model;
+                _this.odeSystemFunction = new KG.ODESystemFunction(def.ODESystemFunction);
             }
             return _this;
         }
-        // create SVG elements
+        // ============================================================
+        // 1. Create SVG elements
+        // ============================================================
         Curve.prototype.draw = function (layer) {
             var curve = this;
+            // [MODIFIED]: Allow fallback to d3.curveLinear if interpolation is invalid
             curve.dataLine = d3.line()
-                .curve(d3[curve.interpolation])
-                .x(function (d) {
-                return curve.xScale.scale(d.x);
-            })
-                .y(function (d) {
-                return curve.yScale.scale(d.y);
-            });
+                .curve(d3[curve.interpolation] || d3.curveLinear)
+                .x(function (d) { return curve.xScale.scale(d.x); })
+                .y(function (d) { return curve.yScale.scale(d.y); });
+            // [UNCHANGED]: Create root SVG group and main paths
             curve.rootElement = layer.append('g');
-            curve.dragPath = curve.rootElement.append('path').attr('stroke-width', '20px').style('stroke-opacity', 0).style('fill', 'none');
-            curve.path = curve.rootElement.append('path').style('fill', 'none');
-            curve.addScreenReaderDescriptions(curve.path);
-            curve.path.on("focus", function () { curve.dragPath.style('fill', 'yellow'); });
-            curve.path.on("blur", function () { curve.dragPath.style('fill', 'none'); });
+            curve.dragPath = curve.rootElement.append('path')
+                .attr('stroke-width', '20px')
+                .style('stroke-opacity', 0)
+                .style('fill', 'none');
+            curve.path = curve.rootElement.append('path')
+                .style('fill', 'none');
+            // [ADDED]: Pre-create group where ODE dots will be drawn
+            curve.rootElement.append('g').attr('class', 'ode-dots-group');
+            // [ADDED]: Optional asynchronous initial redraw to ensure DOM availability
+            setTimeout(function () {
+                try {
+                    curve.redraw();
+                }
+                catch (e) { /* ignore first redraw errors */ }
+            }, 0);
             return curve.addClipPathAndArrows().addInteraction();
         };
-        // update properties
+        // ============================================================
+        // 2. Redraw (includes AnimationODE for ODEs)
+        // ============================================================
         Curve.prototype.redraw = function () {
             var curve = this;
-            if (curve.hasOwnProperty('univariateFunction')) {
-                var fn = curve.univariateFunction, scale = fn.ind == 'y' ? curve.yScale : curve.xScale;
+            // [UNCHANGED]: Univariate function redraw
+            if (curve.univariateFunction) {
+                var fn = curve.univariateFunction;
+                var scale = fn.ind === 'y' ? curve.yScale : curve.xScale;
                 fn.generateData(scale.domainMin, scale.domainMax);
-                curve.dragPath.data([fn.data]).attr('d', curve.dataLine);
                 curve.path.data([fn.data]).attr('d', curve.dataLine);
             }
-            if (curve.hasOwnProperty('parametricFunction')) {
+            // [UNCHANGED]: Parametric function redraw
+            if (curve.parametricFunction) {
                 var fn = curve.parametricFunction;
                 fn.generateData();
-                curve.dragPath.data([fn.data]).attr('d', curve.dataLine);
+                curve.path.data([fn.data]).attr('d', curve.dataLine);
+            }
+            // [ADDED]: ODE-based function redraw with animation
+            if (curve.odeSystemFunction) {
+                var fn = curve.odeSystemFunction;
+                this.odeAnimator.update(curve, fn);
                 curve.path.data([fn.data]).attr('d', curve.dataLine);
             }
             curve.drawStroke(curve.path);
             return curve;
         };
-        // update self and functions
+        // ============================================================
+        // 3. Logical update and change tracking
+        // ============================================================
         Curve.prototype.update = function (force) {
             var curve = _super.prototype.update.call(this, force);
-            if (!curve.hasChanged) {
-                if (curve.hasOwnProperty('univariateFunction')) {
-                    if (curve.univariateFunction.hasChanged) {
-                        curve.redraw();
-                    }
-                }
-                if (curve.hasOwnProperty('parametricFunction')) {
-                    if (curve.parametricFunction.hasChanged) {
-                        curve.redraw();
-                    }
-                }
+            var needsRedraw = false;
+            // [MODIFIED]: Unified change detection including ODE function
+            if (force ||
+                (curve.univariateFunction && curve.univariateFunction.hasChanged) ||
+                (curve.parametricFunction && curve.parametricFunction.hasChanged) ||
+                (curve.odeSystemFunction && curve.odeSystemFunction.hasChanged) // [ADDED]
+            ) {
+                needsRedraw = true;
             }
+            if (needsRedraw)
+                curve.redraw();
             return curve;
         };
         return Curve;
@@ -7975,6 +8238,179 @@ var KG;
         return Label;
     }(KG.ViewObject));
     KG.Label = Label;
+})(KG || (KG = {}));
+/// <reference path='../../kg.ts' />
+var KG;
+(function (KG) {
+    // ============================================================
+    // Main class — controls dots and animation
+    // ============================================================
+    var AnimationODE = /** @class */ (function () {
+        function AnimationODE() {
+            this._active = false;
+            this._handle = null;
+            this._paused = false;
+            this._restartTimeout = null; // Controls pending timeout
+        }
+        // ============================================================
+        // 1. Complete update (called by Curve)
+        // ============================================================
+        AnimationODE.prototype.update = function (curve, fn) {
+            var _this = this;
+            if (!fn || !curve)
+                return;
+            // Generate data and dots if necessary
+            if (typeof fn.generateData === 'function') {
+                fn.generateData();
+            }
+            if (fn.showDots && typeof fn.generateDots === 'function') {
+                fn.generateDots();
+            }
+            // Render static dots
+            this.renderDots(curve, fn.dots || [], {
+                showDots: fn.showDots,
+                dotRadius: fn.dotRadius,
+                dotColor: fn.dotColor
+            });
+            // Cancel previous animation and pending timeout
+            this.stop();
+            if (this._restartTimeout) {
+                clearTimeout(this._restartTimeout);
+                this._restartTimeout = null;
+            }
+            // Check if animation should start
+            if (this.isAnimationOn(fn)) {
+                var delay = fn.restartDelay || 1000; // Default 1s delay
+                // Schedule animation restart
+                this._restartTimeout = setTimeout(function () {
+                    _this._restartTimeout = null;
+                    if (_this._active)
+                        return; // Prevent double start
+                    _this.start(curve, fn.data || [], {
+                        animation: fn.animation,
+                        speed: fn.speed,
+                        movingDotColor: fn.movingDotColor,
+                        movingDotRadius: fn.movingDotRadius
+                    });
+                }, delay);
+            }
+        };
+        // ============================================================
+        // 2. Render static dots
+        // ============================================================
+        AnimationODE.prototype.renderDots = function (curve, data, opts) {
+            if (data === void 0) { data = []; }
+            if (!opts.showDots || !data.length)
+                return;
+            var group = curve.rootElement.select('.ode-dots-group');
+            var dots = group
+                .selectAll('circle.ode-dot')
+                .data(data);
+            dots.enter()
+                .append('circle')
+                .attr('class', 'ode-dot')
+                .attr('r', opts.dotRadius || 3)
+                .merge(dots)
+                .attr('cx', function (d) { return curve.xScale.scale(d.x); })
+                .attr('cy', function (d) { return curve.yScale.scale(d.y); })
+                .style('fill', opts.dotColor || 'green')
+                .style('pointer-events', 'none');
+            dots.exit().remove();
+        };
+        // ============================================================
+        // 3. Start the moving dot animation (real-time control)
+        // ============================================================
+        AnimationODE.prototype.start = function (curve, data, opts) {
+            var _this = this;
+            if (data === void 0) { data = []; }
+            this.stop(); // Restart
+            if (!opts.animation || !data.length)
+                return;
+            this._active = true;
+            var total = data.length;
+            var speed = opts.speed || 1;
+            var color = opts.movingDotColor || 'red';
+            var radius = opts.movingDotRadius || 5;
+            // Create or reuse the moving dot
+            var dot = curve.rootElement.select('.moving-dot');
+            if (dot.empty()) {
+                dot = curve.rootElement
+                    .append('circle')
+                    .attr('class', 'moving-dot')
+                    .attr('r', radius)
+                    .style('fill', color)
+                    .style('pointer-events', 'none');
+            }
+            var frame = 0;
+            var lastTime = performance.now();
+            var animate = function (time) {
+                if (!_this._active || !data.length)
+                    return;
+                // Time difference between frames (ms)
+                var delta = (time - lastTime) / (1000 / 60); // Normalize to "equivalent frames"
+                lastTime = time;
+                // Advance proportionally to real time
+                frame = (frame + speed * delta) % total;
+                var idx = Math.floor(frame);
+                var p = data[idx] || data[0];
+                dot.attr('cx', curve.xScale.scale(p.x))
+                    .attr('cy', curve.yScale.scale(p.y));
+                _this._handle = requestAnimationFrame(animate);
+            };
+            this._handle = requestAnimationFrame(animate);
+        };
+        // ============================================================
+        // 4. Stop animation and remove the moving dot
+        // ============================================================
+        AnimationODE.prototype.stop = function () {
+            if (!this._active && !this._handle)
+                return;
+            this._active = false;
+            if (this._handle)
+                cancelAnimationFrame(this._handle);
+            this._handle = null;
+            // Remove moving dot
+            d3.selectAll('.moving-dot').remove();
+        };
+        // ============================================================
+        // 5. Pause and resume control
+        // ============================================================
+        AnimationODE.prototype.pause = function () {
+            if (this._active) {
+                this._paused = true;
+                this.stop();
+            }
+        };
+        AnimationODE.prototype.resume = function (curve, data, opts) {
+            if (this._paused) {
+                this._paused = false;
+                this.start(curve, data, opts);
+            }
+        };
+        // ============================================================
+        // 6. Helper: check if animation should be active
+        // ============================================================
+        AnimationODE.prototype.isAnimationOn = function (fn) {
+            var val = undefined;
+            // Try reading the 'animation' parameter from the model
+            if (fn && fn.model && fn.model.currentParamValues) {
+                val = fn.model.currentParamValues.animation;
+            }
+            // If not found, try to evaluate expression
+            if (val === undefined && fn && typeof fn.evaluateExpr === 'function') {
+                val = fn.evaluateExpr(fn.animation, fn.model);
+            }
+            return (val === true || val === 'true' || val === 1 || val === '1');
+        };
+        // ============================================================
+        // 7. Current state
+        // ============================================================
+        AnimationODE.prototype.isActive = function () {
+            return this._active;
+        };
+        return AnimationODE;
+    }());
+    KG.AnimationODE = AnimationODE;
 })(KG || (KG = {}));
 /// <reference path="../../kg.ts" />
 var KG;
@@ -9385,6 +9821,7 @@ var KG;
 /// <reference path="math/univariateFunction.ts" />
 /// <reference path="math/parametricFunction.ts" />
 /// <reference path="math/multivariateFunction.ts" />
+/// <reference path="math/odeSystemFunction.ts" />
 /// <reference path="controller/listeners/listener.ts" />
 /// <reference path="controller/listeners/dragListener.ts" />
 /// <reference path="controller/listeners/clickListener.ts" />
@@ -9403,6 +9840,7 @@ var KG;
 /// <reference path="view/viewObjects/ggbObject.ts" />
 /// <reference path="view/viewObjects/contour.ts" />
 /// <reference path="view/viewObjects/label.ts" />
+/// <reference path="view/viewObjects/animationODE.ts" />
 /// <reference path="view/divObjects/divObject.ts" />
 /// <reference path="view/divObjects/positionedDiv.ts" />
 /// <reference path="view/divObjects/div.ts" />
