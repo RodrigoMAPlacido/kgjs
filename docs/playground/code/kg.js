@@ -1365,6 +1365,76 @@ var KGAuthor;
 /// <reference path="../kgAuthor.ts" />
 var KGAuthor;
 (function (KGAuthor) {
+    var SixGraphs = /** @class */ (function (_super) {
+        __extends(SixGraphs, _super);
+        function SixGraphs(def) {
+            var _this = _super.call(this, def) || this;
+            var l = _this;
+            var topLeftGraphDef = def['topLeftGraph'], bottomLeftGraphDef = def['bottomLeftGraph'], middleLeftGraphDef = def['middleLeftGraph'], topRightGraphDef = def['topRightGraph'], middleRightGraphDef = def['middleRightGraph'], bottomRightGraphDef = def['bottomRightGraph'];
+            var leftX = 0.075, rightX = 0.575, topY = 0.025, middleY = 0.35, bottomY = 0.675;
+            topLeftGraphDef.position = {
+                "x": leftX,
+                "y": topY,
+                "width": 0.4,
+                "height": 0.28
+            };
+            middleLeftGraphDef.position = {
+                "x": leftX,
+                "y": middleY,
+                "width": 0.4,
+                "height": 0.28
+            };
+            bottomLeftGraphDef.position = {
+                "x": leftX,
+                "y": bottomY,
+                "width": 0.4,
+                "height": 0.28
+            };
+            topRightGraphDef.position = {
+                "x": rightX,
+                "y": topY,
+                "width": 0.4,
+                "height": 0.28
+            };
+            middleRightGraphDef.position = {
+                "x": rightX,
+                "y": middleY,
+                "width": 0.4,
+                "height": 0.28
+            };
+            bottomRightGraphDef.position = {
+                "x": rightX,
+                "y": bottomY,
+                "width": 0.4,
+                "height": 0.28
+            };
+            l.subObjects.push(new KGAuthor.Graph(topLeftGraphDef));
+            l.subObjects.push(new KGAuthor.Graph(middleLeftGraphDef));
+            l.subObjects.push(new KGAuthor.Graph(bottomLeftGraphDef));
+            l.subObjects.push(new KGAuthor.Graph(topRightGraphDef));
+            l.subObjects.push(new KGAuthor.Graph(middleRightGraphDef));
+            l.subObjects.push(new KGAuthor.Graph(bottomRightGraphDef));
+            return _this;
+        }
+        return SixGraphs;
+    }(KGAuthor.SquareLayout));
+    KGAuthor.SixGraphs = SixGraphs;
+    var SixGraphsPlusSidebar = /** @class */ (function (_super) {
+        __extends(SixGraphsPlusSidebar, _super);
+        function SixGraphsPlusSidebar(def) {
+            var _this = _super.call(this, def) || this;
+            var l = _this;
+            var sidebarDef = def['sidebar'];
+            l.subObjects.push(new KGAuthor.Sidebar(sidebarDef));
+            return _this;
+        }
+        return SixGraphsPlusSidebar;
+    }(SixGraphs));
+    KGAuthor.SixGraphsPlusSidebar = SixGraphsPlusSidebar;
+})(KGAuthor || (KGAuthor = {}));
+/// <reference path="../kgAuthor.ts" />
+var KGAuthor;
+(function (KGAuthor) {
     var GameMatrixLayout = /** @class */ (function (_super) {
         __extends(GameMatrixLayout, _super);
         function GameMatrixLayout(def) {
@@ -5833,6 +5903,7 @@ var KGAuthor;
 /// <reference path="layouts/twoVerticalGraphs.ts"/>
 /// <reference path="layouts/squarePlusTwoVerticalGraphs.ts"/>
 /// <reference path="layouts/fourGraphs.ts"/>
+/// <reference path="layouts/sixGraphs.ts"/>
 /// <reference path="layouts/gameMatrix.ts"/>
 /// <reference path="positionedObjects/positionedObject.ts"/>
 /// <reference path="positionedObjects/graph.ts"/>

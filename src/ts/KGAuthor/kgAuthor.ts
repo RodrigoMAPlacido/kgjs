@@ -14,6 +14,7 @@
 /// <reference path="layouts/twoVerticalGraphs.ts"/>
 /// <reference path="layouts/squarePlusTwoVerticalGraphs.ts"/>
 /// <reference path="layouts/fourGraphs.ts"/>
+/// <reference path="layouts/sixGraphs.ts"/>
 /// <reference path="layouts/gameMatrix.ts"/>
 
 
